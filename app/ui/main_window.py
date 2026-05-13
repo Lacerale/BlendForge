@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.document import Document
+from app.core.project_format import ProjectFormat
 from app.effects.blend_modes import blend_mode_names
 from app.io.image_io import save_image
 from app.io.import_layers import import_layers_from_file
@@ -67,6 +68,10 @@ class MainWindow(QMainWindow):
         open_btn.clicked.connect(self.open_image)
         export_btn = QPushButton("Export Composite")
         export_btn.clicked.connect(self.export_composite)
+        save_proj_btn = QPushButton("Save .artproj")
+        save_proj_btn.clicked.connect(self.save_project)
+        open_proj_btn = QPushButton("Open .artproj")
+        open_proj_btn.clicked.connect(self.open_project)
 
 
         select_none_btn = QPushButton("Selection: None")
@@ -118,7 +123,7 @@ class MainWindow(QMainWindow):
         text_btn.clicked.connect(self.add_text_layer)
 
         for w in [
-            open_btn, export_btn, select_none_btn, lasso_btn, poly_btn, wand_btn,
+            open_btn, export_btn, save_proj_btn, open_proj_btn, select_none_btn, lasso_btn, poly_btn, wand_btn,
             QLabel("Blend Mode"), self.blend_combo,
             QLabel("Opacity"), self.opacity_slider,
             QLabel("Blur Intensity"), self.blur_slider,
@@ -165,6 +170,36 @@ class MainWindow(QMainWindow):
             return
         layer.blend_mode = mode
         self.refresh_view()
+
+
+    def save_project(self) -> None:
+        if not self.document.layer_manager.layers:
+            QMessageBox.information(self, "No layers", "Nothing to save.")
+            return
+        path = QFileDialog.getExistingDirectory(self, "Select Project Folder")
+        if not path:
+            return
+        try:
+            ProjectFormat.save(path, self.document.layer_manager.layers)
+            self.statusBar().showMessage("Project saved", 4000)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to save project")
+            QMessageBox.critical(self, "Save Error", str(exc))
+
+    def open_project(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, "Open Project Folder")
+        if not path:
+            return
+        try:
+            layers = ProjectFormat.load(path)
+            if not layers:
+                raise RuntimeError("Project has no layers")
+            self.document.layer_manager.layers = layers
+            self.current_layer_index = len(layers) - 1
+            self.refresh_view()
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed to open project")
+            QMessageBox.critical(self, "Open Project Error", str(exc))
 
     def open_image(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
