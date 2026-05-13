@@ -171,8 +171,9 @@ class MainWindow(QMainWindow):
             if not imported:
                 raise RuntimeError("No layers found in file.")
             self.document.layer_manager.layers.clear()
-            for name, image in imported:
-                self.document.add_image_layer(image, name=name)
+            for name, image, visible in imported:
+                layer = self.document.add_image_layer(image, name=name)
+                layer.visible = visible
             self.current_layer_index = len(self.document.layer_manager.layers) - 1
             self.refresh_view()
         except Exception as exc:  # noqa: BLE001
