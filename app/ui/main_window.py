@@ -68,6 +68,15 @@ class MainWindow(QMainWindow):
         export_btn = QPushButton("Export Composite")
         export_btn.clicked.connect(self.export_composite)
 
+
+        select_none_btn = QPushButton("Selection: None")
+        select_none_btn.clicked.connect(lambda: self.canvas.set_selection_mode("none"))
+        lasso_btn = QPushButton("Lasso Tool")
+        lasso_btn.clicked.connect(lambda: self.canvas.set_selection_mode("lasso"))
+        poly_btn = QPushButton("Polyline Tool")
+        poly_btn.clicked.connect(lambda: self.canvas.set_selection_mode("polyline"))
+        wand_btn = QPushButton("Magic Wand")
+        wand_btn.clicked.connect(lambda: self.canvas.set_selection_mode("wand"))
         self.blend_combo = QComboBox()
         self.blend_combo.addItems(blend_mode_names())
         self.blend_combo.currentTextChanged.connect(self.change_selected_blend)
@@ -109,7 +118,7 @@ class MainWindow(QMainWindow):
         text_btn.clicked.connect(self.add_text_layer)
 
         for w in [
-            open_btn, export_btn,
+            open_btn, export_btn, select_none_btn, lasso_btn, poly_btn, wand_btn,
             QLabel("Blend Mode"), self.blend_combo,
             QLabel("Opacity"), self.opacity_slider,
             QLabel("Blur Intensity"), self.blur_slider,
@@ -176,6 +185,8 @@ class MainWindow(QMainWindow):
                 layer.visible = visible
             self.current_layer_index = len(self.document.layer_manager.layers) - 1
             self.refresh_view()
+            if path.lower().endswith((".tif", ".tiff")) and len(imported) == 1:
+                self.statusBar().showMessage("TIFF opened with 1 layer (source may contain a single raster page).", 6000)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Failed to open file")
             QMessageBox.critical(self, "Open Error", str(exc))
